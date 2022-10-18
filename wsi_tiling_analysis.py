@@ -22,7 +22,6 @@ def wsi_coarse_level(Slide,Magnification,Stride,tol=0.02):
     Objective = float(Slide.properties[
                           openslide.PROPERTY_NAME_OBJECTIVE_POWER])
 
-    # determine if desired magnification is avilable in file
     Available = tuple(Objective / x for x in Factors)
     Mismatch = tuple(x - Magnification for x in Available)
     AbsMismatch = tuple(abs(x) for x in Mismatch)
@@ -39,8 +38,8 @@ def wsi_coarse_level(Slide,Magnification,Stride,tol=0.02):
 
         Factor = Magnification / Available[Level]
 
-    # translate parameters of input tiling schedule into new schedule
     Tout = [round(Stride[0]*Magnification/Objective), round(Stride[0]*Magnification/Objective)]
+
 
     return Level,Tout,Factor
 
@@ -52,9 +51,8 @@ def parallel_tiling(i,X,Y,dest_imagePath,img_name,Stride,File,color_norm):
         Tile = np.asarray(Tile)
         Tile = Tile[:, :, :3]
         bn = np.sum(Tile[:, :, 0] < 5) + np.sum(np.mean(Tile,axis=2) > 245)
-        if (np.std(Tile[:, :, 0]) + np.std(Tile[:, :, 1]) + np.std(Tile[:, :, 2])) / 3 > 18 and bn < Stride[0] * Stride[
-            1] * 0.3:
-            tile_name = img_name.split('.')[0] + '_' + str(X[i, j]) + '_' + str(Y[i, j]) + '_' + str(
+        if (np.std(Tile[:, :, 0]) + np.std(Tile[:, :, 1]) + np.std(Tile[:, :, 2])) / 3 > 18 and bn < Stride[0] * Stride[1] * 0.3: <- 원래 값
+                    tile_name = img_name.split('.')[0] + '_' + str(X[i, j]) + '_' + str(Y[i, j]) + '_' + str(
                 Stride[0]) + '_' + str(Stride[1]) + '_' + '.png'
 
             if color_norm == True:
@@ -120,7 +118,6 @@ def wsi_tiling(File,dest_imagePath,img_name,Tile_size,color_norm=False, tumor_ma
 
     if parallel_running==True and tumor_mask==None:
         for i in range(X.shape[0]-1):
-            print(i)
             parallel_tiling(i,X,Y,dest_imagePath,img_name,Stride, File, color_norm)
     elif parallel_running==True and tumor_mask!=None:
         tumor_mask=plt.imread(tumor_mask+img_name[:-5]+'.png')
@@ -129,7 +126,7 @@ def wsi_tiling(File,dest_imagePath,img_name,Tile_size,color_norm=False, tumor_ma
              for _ in executor.map(parallel_tiling_roi, list(range(X.shape[0]-1)), repeat(X), repeat(Y), repeat(dest_imagePath),repeat(img_name),
                                    repeat(Stride),repeat(File),repeat(color_norm),repeat(tumor_mask)):
                  pass
-    else: # for debug
+    else:
         for i in range(150,X.shape[0] - 1):
             for j in range(X.shape[1] - 1):
                     Tile = Slide.read_region((int(X[i, j]), int(Y[i, j])), 0, (Stride[0], Stride[1]))
@@ -142,5 +139,6 @@ def wsi_tiling(File,dest_imagePath,img_name,Tile_size,color_norm=False, tumor_ma
                         img.save(dest_imagePath+tile_name)
 
     time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    print('Training complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60))
  
